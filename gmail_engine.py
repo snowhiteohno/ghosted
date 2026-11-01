@@ -7,6 +7,7 @@ import os
 import re
 import time
 from email.header import decode_header
+from datetime import datetime
 from email.utils import parsedate_to_datetime
 from urllib.parse import quote
 
@@ -74,7 +75,7 @@ def classify(mails, known=()):
 
 
 def check(portal):
-    snap = {"portal": portal["id"], "engine": "email", "checked_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "run_id": None,
+    snap = {"portal": portal["id"], "engine": "email", "checked_at": datetime.now().astimezone().isoformat(timespec="seconds"), "run_id": None,
             "shot": None, "steps": 0, "status": "failed", "applications": [], "notes": None}
     try:
         mails = fetch()

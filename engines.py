@@ -5,7 +5,7 @@ NAV = {
     "workday": 'Open "Candidate Home" from the account menu (top right), then its "My Applications" section.',
     "internshala": 'Open "My Applications" from the student menu.',
     "unstop": 'Open "My Applications" from the profile menu.',
-    "wellfound": 'On the Jobs page, open the "Applied" tab (sometimes under "Track") that lists the jobs you applied to.',
+    "wellfound": 'This page is the list of jobs you applied to. Check the "Ongoing" tab, then "Archived" if Ongoing is empty.',
 }
 
 GOAL = """TASK: ghosted_check_{engine}
@@ -16,7 +16,8 @@ If you are logged out or land on a login / sign-in page, set status to "logged_o
 For every application listed, record: job title, company, date applied, the exact status text shown,
 and the application URL if a link is visible in the list. Read everything from the list page itself: do not
 open individual applications, and leave the URL null rather than clicking to find it. Paginate only if the
-list says there are more. Finish as soon as the list is recorded.
+list says there are more. The list is often below banners and promotions: scroll down until you see application
+rows or an explicit empty-state message before deciding. Finish as soon as the list is recorded.
 
 Do not click Withdraw, Accept, Decline, or any button that changes an application.
 Do not upload, edit, or submit anything. Read only.

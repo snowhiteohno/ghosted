@@ -45,7 +45,8 @@ def _norm(text, company=False):
     t = re.sub(r"[^a-z0-9]+", " ", t)
     if company:
         t = SUFFIX.sub(" ", t)
-    return " ".join(w[:-1] if len(w) > 3 and w.endswith("s") else w for w in t.split())
+    words = [w[:-1] if len(w) > 3 and w.endswith("s") else w for w in t.split()]
+    return " ".join(w for i, w in enumerate(words) if i == 0 or w != words[i - 1])  # "Internship Internship" happens
 
 
 def key(app):

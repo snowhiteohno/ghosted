@@ -1,7 +1,9 @@
 """One status check for one portal, enforcing the reliability rules in GHOSTED.md."""
 import json
 import os
+import re
 import time
+from datetime import datetime
 
 import httpx
 
@@ -11,12 +13,28 @@ import tinyfish
 
 
 def now_iso():
-    return time.strftime("%Y-%m-%dT%H:%M:%S")
+    """Local time with its UTC offset, so a viewer in another timezone still sees correct "5 min ago" values."""
+    return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
 def _snap(portal):
     return {"portal": portal["id"], "engine": portal["engine"], "checked_at": now_iso(), "run_id": None,
             "shot": None, "steps": 0, "status": "failed", "applications": [], "notes": None}
+
+
+DATE_FORMATS = ["%Y-%m-%d", "%d %b' %y", "%d %b %Y", "%B %d, %Y %I:%M%p", "%B %d, %Y", "%Y-%m-%d %I:%M%p", "%b %d, %Y"]
+
+
+def iso_date(text):
+    """Portals print dates every which way ("1 Nov' 26", "November 1, 2026 4:18am"); store YYYY-MM-DD, else keep the raw text."""
+    text = (text or "").strip()
+    for fmt in DATE_FORMATS:
+        try:
+            return datetime.strptime(text, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            pass
+    m = re.match(r"\d{4}-\d{2}-\d{2}", text)
+    return m.group(0) if m else (text or None)
 
 
 def _accept(snap, portal, apps):
@@ -28,6 +46,7 @@ def _accept(snap, portal, apps):
     for a in apps:
         a["status"] = engines.normalize(a.get("status_raw"))
         a["url"] = a.get("url") or portal.get("url")
+        a["applied_on"] = iso_date(a.get("applied_on"))
     snap.update(status="ok", applications=apps)
     return snap
 
@@ -65,6 +84,8 @@ def _read(portal, use_vault=False, on_live=None):
 def check_portal(portal, on_live=None):
     """Returns (snapshot, events). Rule 2: logged out -> vault repair -> re-login badge. Rule 4: a change needs two reads."""
     snap = _read(portal, on_live=on_live)
+    if snap["status"] == "failed" and portal["engine"] not in ("manual", "email"):
+        snap = _read(portal, on_live=on_live)  # one retry: an agent that stops before scrolling to the list is the usual cause
     if snap["status"] == "logged_out":
         try:
             snap = _read(portal, use_vault=True, on_live=on_live)

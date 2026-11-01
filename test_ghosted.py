@@ -39,6 +39,7 @@ assert store.key({"company": "Tower Research Capital LLC", "title": "Campus Posi
 assert store.key({"company": "National Laboratory of the Rockies (NLR)", "title": "Intern - AI"}) == \
        store.key({"company": "National Laboratory of the Rockies", "title": "Intern, AI"})
 assert store.key({"company": "Acme", "title": "Data Intern"}) != store.key({"company": "Acme", "title": "ML Intern"})
+assert store.key({"company": "A", "title": "Dev Internship Internship"}) == store.key({"company": "A", "title": "Dev Internship"})
 
 assert tinyfish.referee([{"action": "Click the 'My Applications' tab"}, {"action": "Scroll down"}]) is None
 assert tinyfish.referee([{"action": "Click 'Withdraw application'"}]) == "Click 'Withdraw application'"
@@ -48,6 +49,11 @@ assert tinyfish.referee([{"action": "Click the 'Confirm' button"}]) == "Click th
 assert tinyfish.referee([{"action": "Enter a message and submit the form"}]) is not None
 assert tinyfish.last_shot([{"id": "a", "screenshot": "data:x"}, {"id": "b", "screenshot": None}]) == "data:x"
 assert tinyfish.last_shot([]) is None
+
+assert check.iso_date("1 Nov' 26") == "2026-11-01"
+assert check.iso_date("November 1, 2026 4:18am") == "2026-11-01"
+assert check.iso_date("2026-11-01 4:18am") == "2026-11-01" and check.iso_date("2026-09-15") == "2026-09-15"
+assert check.iso_date("last week") == "last week" and check.iso_date(None) is None
 
 # manual engine through _read: normalization, default url, and rule 1 on an empty file
 manual = store.ROOT / "manual" / "_test.json"
