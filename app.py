@@ -14,15 +14,18 @@ from fastapi.responses import FileResponse, HTMLResponse, Response, StreamingRes
 
 load_dotenv()
 import check  # noqa: E402
+import logos  # noqa: E402
 import engines  # noqa: E402
 import store  # noqa: E402
 
 ROOT = Path(__file__).parent
 PORTALS = json.loads((ROOT / "portals.json").read_text())
+URLS = {p["id"]: p.get("url") for p in PORTALS}
 state = {p["id"]: store.latest(p["id"], ok_only=False)
          or {"portal": p["id"], "engine": p["engine"], "status": "never", "applications": []} for p in PORTALS}
 events = [json.loads(l) for l in store.EVENTS.read_text().splitlines()] if store.EVENTS.exists() else []
 listeners = set()
+domains = logos.load()
 checking = False
 _task = None
 COOLDOWN = float(os.getenv("CHECK_COOLDOWN_MIN", "10")) * 60  # bounds spend when the board is public
@@ -33,7 +36,8 @@ NEXT_RAW = {"Applied": "Shortlisted", "Unknown": "Shortlisted", "Under review": 
 
 
 def payload():
-    return json.dumps({"portals": state, "events": events[-50:], "checking": checking,
+    portals = {k: {**v, "url": URLS.get(k)} for k, v in state.items()}  # snapshots do not carry the portal address
+    return json.dumps({"portals": portals, "events": events[-50:], "checking": checking, "domains": domains,
                        "cooldown": max(0, int(last_check + COOLDOWN - time.time())), "bot": os.getenv("TELEGRAM_BOT_NAME")})
 
 
@@ -59,11 +63,24 @@ async def check_one(portal):
     state[pid] = snap
     events.extend(evs)
     broadcast()
+    await enrich()
     for e in evs:
         try:
             await asyncio.to_thread(check.telegram, check.format_event(e))
         except Exception as err:
             print("telegram failed:", err)
+
+
+async def enrich():
+    """Fetch logo domains for companies the board has not seen before. Cosmetic, so failures are only logged."""
+    names = {a["company"] for p in state.values() for a in p.get("applications", [])} - set(domains)
+    if not names:
+        return
+    try:
+        domains.update(await asyncio.to_thread(logos.resolve, names))
+        broadcast()
+    except Exception as e:
+        print("logo lookup failed:", e)
 
 
 async def check_all():
@@ -92,6 +109,7 @@ async def lifespan(app):
         if p["engine"] == "manual" and state[p["id"]]["status"] == "never":
             await check_one(p)
     task = asyncio.create_task(scheduler())
+    asyncio.create_task(enrich())
     yield
     task.cancel()
 

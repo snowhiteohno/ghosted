@@ -56,6 +56,7 @@ Spend is bounded: **Check now** runs at most once per `CHECK_COOLDOWN_MIN` (defa
 | `check.py` | One portal check enforcing the five reliability rules; manual engine; Telegram |
 | `store.py` | `snapshots/{portal}/{timestamp}.json` plus the `.jpg` it was read from, `events.jsonl`, diff |
 | `gmail_engine.py` | Greenhouse/Lever/Ashby emails via Gmail IMAP (read-only) + one Gemini call |
+| `logos.py` | Company name to website domain, one Gemini call per batch of new names, cached; the board shows the logo or a monogram |
 | `app.py`, `board.html` | FastAPI board, SSE, live browser frames, local screenshot route, cooldown, simulate, 12 h scheduler |
 | `plant.py` | Plant a status change in a manual portal for the rehearsal |
 | `probe.py` | Probes, profile list, Telegram test ping |

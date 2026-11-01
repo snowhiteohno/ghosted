@@ -65,13 +65,18 @@ def classify(mails, known=()):
                    "status moved:\n" + "\n".join(f"- {c} | {t} | {st}" for c, t, st in known) + "\n\n")
     for i, m in enumerate(mails):
         prompt += f"--- email {i}\nFrom: {m['from']}\nSubject: {m['subject']}\nDate: {m['date']}\n{m['body']}\n\n"
+    return llm_json(prompt)["applications"]
+
+
+def llm_json(prompt):
+    """One deterministic JSON-mode call to the configured OpenAI-compatible model."""
     r = httpx.post(f"{os.environ['LLM_BASE_URL']}/chat/completions",
                    headers={"Authorization": f"Bearer {os.environ['LLM_API_KEY']}"},
                    json={"model": os.environ["LLM_MODEL"], "messages": [{"role": "user", "content": prompt}],
                          "response_format": {"type": "json_object"}, "temperature": 0}, timeout=120)
     r.raise_for_status()
     content = r.json()["choices"][0]["message"]["content"].strip()
-    return json.loads(re.sub(r"^```(?:json)?\s*|\s*```$", "", content))["applications"]
+    return json.loads(re.sub(r"^```(?:json)?\s*|\s*```$", "", content))
 
 
 def check(portal):
