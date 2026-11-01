@@ -1,0 +1,37 @@
+[
+ {
+  "title": "Software Engineer Intern",
+  "company": "Northwind Labs",
+  "applied_on": "2026-10-03",
+  "status_raw": "Viewed by recruiter",
+  "url": "https://www.naukri.com"
+ },
+ {
+  "title": "Backend Intern",
+  "company": "Globex Technologies",
+  "applied_on": "2026-10-07",
+  "status_raw": "Applied",
+  "url": "https://www.naukri.com"
+ },
+ {
+  "title": "Data Analyst Intern",
+  "company": "Initech",
+  "applied_on": "2026-10-11",
+  "status_raw": "Shortlisted",
+  "url": "https://www.naukri.com"
+ },
+ {
+  "title": "Frontend Intern",
+  "company": "Vandelay Systems",
+  "applied_on": "2026-10-15",
+  "status_raw": "Not shortlisted",
+  "url": "https://www.naukri.com"
+ },
+ {
+  "title": "Platform Intern",
+  "company": "Hooli Cloud",
+  "applied_on": "2026-10-20",
+  "status_raw": "Applied",
+  "url": "https://www.naukri.com"
+ }
+]

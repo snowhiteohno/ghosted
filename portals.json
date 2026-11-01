@@ -1,0 +1,23 @@
+[
+  {
+    "id": "internshala",
+    "engine": "internshala",
+    "url": "https://internshala.com/student/applications",
+    "profile_id": "prof_5d0fbddc22814959"
+  },
+  {
+    "id": "wellfound",
+    "engine": "wellfound",
+    "url": "https://wellfound.com/jobs",
+    "profile_id": "prof_5d0fbddc22814959"
+  },
+  {
+    "id": "gmail",
+    "engine": "email"
+  },
+  {
+    "id": "naukri",
+    "engine": "manual",
+    "url": "https://www.naukri.com"
+  }
+]

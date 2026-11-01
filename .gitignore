@@ -1,0 +1,6 @@
+.env
+.venv/
+snapshots/
+events.jsonl
+__pycache__/
+.playwright-mcp/

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ghosted?</title>
+<style>
+:root{--bg:#0f1115;--card:#171a21;--line:#262b36;--fg:#e6e8ee;--mute:#8b93a7;--accent:#5b8cff;--warn:#ffcf5c}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,sans-serif}
+header{display:flex;align-items:center;gap:16px;padding:16px 24px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+h1{font-size:22px;margin:0}h1 small{color:var(--mute);font-weight:400;margin-left:8px;font-size:14px}
+#summary{color:var(--mute);margin-left:auto}
+button{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:8px 14px;font-size:15px;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+#sim{background:var(--card);border:1px solid var(--line);color:var(--mute)}
+main{display:grid;grid-template-columns:1fr 340px;gap:24px;padding:24px}
+@media(max-width:900px){main{grid-template-columns:1fr;padding:16px}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 12px;color:var(--mute)}
+.chip b{color:var(--fg);font-weight:500}
+.chip.failed,.chip.relogin{border-color:#c0392b;color:#ff7b6b}.chip.checking{border-color:var(--accent);color:var(--accent)}.chip.ok{color:#5ec27a}
+.live{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.live figure{margin:0}.live iframe{width:360px;height:220px;border:1px solid var(--line);border-radius:8px;background:#000}
+.live figcaption{color:var(--mute);font-size:12px;margin-top:4px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line)}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+td.mute{color:var(--mute);white-space:nowrap}
+tr.changed td{background:#1d1b12;animation:pulse 1.2s ease-out 3}tr.changed td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+@keyframes pulse{0%{background:#4a3a14}100%{background:#1d1b12}}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:13px;font-weight:500;cursor:help}
+.s-Applied{background:#2b3140;color:#b8c0d4}.s-Under{background:#1f3350;color:#7fb3ff}.s-Assessment{background:#36264d;color:#c9a3ff}
+.s-Interview{background:#4a3a14;color:#ffcf5c}.s-Offer{background:#163d2a;color:#5ec27a}.s-Rejected{background:#4a1c1c;color:#ff7b6b}
+.s-Unknown{border:1px dashed var(--mute);color:var(--mute)}
+aside h2{font-size:13px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;margin:0 0 12px}
+.ev{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.ev:first-child{border-color:var(--warn)}
+.t{color:var(--mute);font-size:12px}
+a{color:var(--accent);text-decoration:none}
+.empty{color:var(--mute);padding:24px;text-align:center}
+</style></head><body>
+<header><h1>Ghosted? <small>real status, read from inside the portals</small></h1>
+<button id="check">Check now</button><button id="sim" title="Advances one hand-tracked row to its next status and re-checks that portal. Demo data only.">Simulate a change</button><span id="note" class="t"></span><span id="summary"></span></header>
+<main>
+<section><div class="chips" id="chips"></div><div class="live" id="live"></div>
+<table><thead><tr><th>Portal</th><th>Company</th><th>Role</th><th>Applied</th><th>Status</th><th>Last checked</th><th>Last changed</th><th>Source</th></tr></thead>
+<tbody id="rows"></tbody></table></section>
+<aside><h2>Events</h2><div id="events"></div></aside>
+</main>
+<script>
+const LABEL={never:'not checked',ok:'ok',failed:'check failed',relogin:'re-login needed',checking:'checking…'};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const when=s=>s?s.replace('T',' '):'—';
+let cooldown=0;
+function tick(){const b=document.getElementById('check');b.disabled=cooldown>0||b.dataset.checking==='1';b.textContent=cooldown>0?`Check now (${Math.ceil(cooldown/60)} min)`:'Check now';if(cooldown>0)cooldown--;}
+setInterval(tick,1000);
+function render(d){
+  cooldown=d.cooldown||0;document.getElementById('check').dataset.checking=d.checking?'1':'0';tick();
+  document.getElementById('note').textContent=d.checking?'runs fanning out…':(d.bot?`pings: message @${d.bot} on Telegram, then simulate`:'');
+  const portals=Object.values(d.portals);
+  const evKeys=new Set(d.events.map(e=>[e.portal,e.company,e.title,e.ts].join('|')));
+  const rows=portals.flatMap(p=>(p.applications||[]).map(a=>({p,a,changed:evKeys.has([p.portal,a.company,a.title,a.changed_at].join('|'))})))
+    .sort((x,y)=>(y.a.changed_at||'').localeCompare(x.a.changed_at||''));
+  const last=portals.map(p=>p.checked_at||'').sort().pop();
+  document.getElementById('summary').textContent=`${rows.length} applications · ${portals.length} portals · last check ${last?last.slice(11,16):'never'}`;
+  document.getElementById('chips').innerHTML=portals.map(p=>
+    `<span class="chip ${p.status}" title="${esc(p.notes||'')}"><b>${esc(p.portal)}</b> · ${LABEL[p.status]||p.status}`+
+    `${(p.status==='failed'||p.status==='relogin')&&p.notes?' · '+esc(p.notes.slice(0,60)):''}`+
+    `${p.live?` <a href="${esc(p.live)}" target="_blank">watch live</a>`:''}${p.shot?` <a href="/shot/${esc(p.shot)}" target="_blank">view</a>`:''}</span>`).join('');
+  document.getElementById('live').innerHTML=portals.filter(p=>p.live).map(p=>
+    `<figure><iframe src="${esc(p.live)}"></iframe><figcaption>${esc(p.portal)} · live browser</figcaption></figure>`).join('');
+  document.getElementById('rows').innerHTML=rows.map(({p,a,changed})=>`<tr class="${changed?'changed':''}">
+    <td class="mute">${esc(p.portal)}</td><td>${esc(a.company)}</td><td>${esc(a.title)}</td><td class="mute">${esc(a.applied_on||'—')}</td>
+    <td><span class="badge s-${(a.status||'Unknown').split(' ')[0]}" title="raw: ${esc(a.status_raw)}">${esc(a.status)}${a.status==='Unknown'?' · '+esc(a.status_raw):''}</span></td>
+    <td class="mute">${when(p.checked_at)}</td><td class="mute">${when(a.changed_at)}</td>
+    <td>${a.shot?`<a href="/shot/${esc(a.shot)}" target="_blank">screenshot</a> `:''}${a.url?`<a href="${esc(a.url)}" target="_blank">open</a>`:''}</td></tr>`).join('')
+    ||`<tr><td colspan="8" class="empty">No rows yet. Hit “Check now”.</td></tr>`;
+  document.getElementById('events').innerHTML=[...d.events].reverse().map(e=>`<div class="ev"><div class="t">${when(e.ts)} · ${esc(e.portal)}</div>
+    <div>${esc(e.company)} · ${esc(e.title)}</div><div>${e.from?esc(e.from)+' → ':'new: '}<b>${esc(e.to)}</b> <span class="t" title="raw status">“${esc(e.raw)}”</span></div></div>`).join('')
+    ||'<div class="empty">No changes yet.</div>';
+}
+fetch('/api/state').then(r=>r.json()).then(render);
+new EventSource('/api/stream').onmessage=e=>render(JSON.parse(e.data));
+document.getElementById('check').onclick=()=>fetch('/api/check',{method:'POST'});
+document.getElementById('sim').onclick=()=>fetch('/api/simulate',{method:'POST'});
+</script></body></html>
